@@ -17,4 +17,4 @@ ARG JAR_FILE=target/Cloud_Lab-0.0.1-SNAPSHOT.jar
 ADD ${JAR_FILE} Cloud_Lab.jar
 
 # Run the jar file 
-ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/Cloud_Lab.jar"]
+#ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/Cloud_Lab.jar"]
