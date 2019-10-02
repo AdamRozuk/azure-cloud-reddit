@@ -18,6 +18,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.Arrays;
@@ -55,6 +56,7 @@ public class MediaController {
             CloudBlobContainer container = blobClient.getContainerReference("images");
             // Get reference to blob
             CloudBlob blob = container.getBlockBlobReference( file.getOriginalFilename());
+            blob.getProperties().setContentType(file.getContentType());
             // Upload contents from byte array (check documentation for other alternatives)
             blob.uploadFromByteArray(file.getBytes(), 0, file.getBytes().length);
         } catch (URISyntaxException | StorageException | IOException e) {
@@ -96,7 +98,6 @@ public class MediaController {
             // Get reference to blob
             CloudBlob blob = container.getBlobReferenceFromServer(fileName);
             byteArrayOutputStream = new ByteArrayOutputStream();
-            blob.download(byteArrayOutputStream);
             blob.download(byteArrayOutputStream);
             byteArrayOutputStream.close();
             contents = byteArrayOutputStream.toByteArray();
