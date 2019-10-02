@@ -18,7 +18,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.Arrays;
@@ -37,7 +36,7 @@ public class MediaController {
     @GetMapping
     public HttpEntity download() {
         StringObj result = new StringObj();
-        result.setHello("Hello world !!! -- TO BE REMOVED");
+        result.setHello("Hello world !!! -- DEPLOY 2");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
