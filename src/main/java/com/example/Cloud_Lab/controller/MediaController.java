@@ -1,5 +1,8 @@
-package com.example.Cloud_Lab;
+package com.example.Cloud_Lab.controller;
 
+import com.example.Cloud_Lab.MediaService;
+import com.example.Cloud_Lab.StringObj;
+import com.example.Cloud_Lab.UploadFileResponse;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.blob.CloudBlob;
