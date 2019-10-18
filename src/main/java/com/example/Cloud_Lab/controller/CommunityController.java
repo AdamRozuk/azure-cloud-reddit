@@ -5,15 +5,16 @@ import com.example.Cloud_Lab.dto.User;
 import com.google.gson.Gson;
 import com.microsoft.azure.cosmosdb.Document;
 import com.microsoft.azure.cosmosdb.FeedOptions;
+import com.microsoft.azure.cosmosdb.FeedResponse;
 import com.microsoft.azure.cosmosdb.ResourceResponse;
 import com.microsoft.azure.cosmosdb.rx.AsyncDocumentClient;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import rx.Observable;
+
+import java.util.Iterator;
+import java.util.StringJoiner;
 
 import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getCollectionString;
 import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getDocumentClient;
@@ -23,7 +24,7 @@ import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getD
 public class CommunityController {
 
     @PostMapping("/add")
-    public ResponseEntity<String> addUser(@RequestParam("name") String name){
+    public ResponseEntity<String> addCommunity(@RequestParam("name") String name){
         String addedCommunity = "";
         Community community = new Community();
         try {
@@ -50,5 +51,107 @@ public class CommunityController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .body(addedCommunity);
+    }
+
+    @GetMapping("/findCommunityById")
+    public ResponseEntity<String> findCommunityById(@RequestParam("id") String id){
+        String addedCommunity = "";
+        try {
+            AsyncDocumentClient client = getDocumentClient();
+            String UsersCollection = getCollectionString("Community");
+
+            FeedOptions queryOptions = new FeedOptions();
+            queryOptions.setEnableCrossPartitionQuery(true);
+            queryOptions.setMaxDegreeOfParallelism(-1);
+
+            Iterator<FeedResponse<Document>> it = client.queryDocuments(
+                    UsersCollection, "SELECT * FROM Community",
+                    queryOptions).toBlocking().getIterator();
+
+//            FeedResponse<Document> addedUser = client.queryDocuments(
+//                    UsersCollection, "SELECT * FROM Users u WHERE u.id = " + str,
+//                    queryOptions).toBlocking().single();
+
+
+            System.out.println( "Result:");
+            while( it.hasNext())
+                for( Document d : it.next().getResults())
+                    System.out.println( d.toJson());
+
+            it = client.queryDocuments(
+                    UsersCollection, "SELECT * FROM Community u WHERE u.id = '" + id + "'",
+                    queryOptions).toBlocking().getIterator();
+
+            System.out.println( "Result:");
+            while( it.hasNext())
+                for( Document d : it.next().getResults()) {
+                    System.out.println( d.toJson());
+                    addedCommunity = d.toJson();
+                    Gson g = new Gson();
+                    User u = g.fromJson(d.toJson(), User.class);
+                    System.out.println( u.getId());
+                }
+        } catch( Exception e) {
+            e.printStackTrace();
+        }
+        String contentType = "application/json";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(addedCommunity);
+    }
+
+    @GetMapping("/findAllCommunities")
+    public ResponseEntity<String> findAllCommunity(){
+        String addedCommunity = "";
+        StringBuilder builder = new StringBuilder();
+        //List<String> communities= new ArrayList<>();
+        try {
+            AsyncDocumentClient client = getDocumentClient();
+            String UsersCollection = getCollectionString("Community");
+
+            FeedOptions queryOptions = new FeedOptions();
+            queryOptions.setEnableCrossPartitionQuery(true);
+            queryOptions.setMaxDegreeOfParallelism(-1);
+
+            Iterator<FeedResponse<Document>> it = client.queryDocuments(
+                    UsersCollection, "SELECT * FROM Community",
+                    queryOptions).toBlocking().getIterator();
+
+//            FeedResponse<Document> addedUser = client.queryDocuments(
+//                    UsersCollection, "SELECT * FROM Users u WHERE u.id = " + str,
+//                    queryOptions).toBlocking().single();
+
+
+            System.out.println( "Result:");
+            builder.append("{ \"community\": [");
+            StringJoiner mystring = new StringJoiner(",");
+            while( it.hasNext()){
+                for( Document d : it.next().getResults()){
+                    mystring.add(d.toJson());
+                }
+            }
+
+            builder.append(mystring);
+            builder.append("]}");
+
+            System.out.println( "Result:");
+            while( it.hasNext())
+                for( Document d : it.next().getResults()) {
+                    System.out.println( d.toJson());
+                    //communities.add(d.toJson());
+                    addedCommunity = d.toJson();
+                    Gson g = new Gson();
+                    User u = g.fromJson(d.toJson(), User.class);
+                    System.out.println( u.getId());
+                }
+        } catch( Exception e) {
+            e.printStackTrace();
+        }
+        String contentType = "application/json";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(builder.toString());
     }
 }

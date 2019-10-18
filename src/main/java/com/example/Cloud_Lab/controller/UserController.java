@@ -93,7 +93,7 @@ public class UserController {
         } catch( Exception e) {
             e.printStackTrace();
         }
-        String contentType = "application/octet-stream";
+        String contentType = "application/json";
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))

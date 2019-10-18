@@ -11,6 +11,7 @@ import java.util.Date;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Post {
     String Id;
+    String familyId;
     String title;
     String communityId;
     String creatorNickname;
