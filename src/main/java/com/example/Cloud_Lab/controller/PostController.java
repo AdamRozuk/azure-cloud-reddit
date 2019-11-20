@@ -15,9 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rx.Observable;
 
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 
 import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getCollectionString;
 import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getDocumentClient;
@@ -43,12 +41,12 @@ public class PostController {
             post.setMessage(message);
             post.setLinkToImage(linkToImage);
             post.setLinkToParentPost(linkToParentPost);
-            post.setNumberOfLikes(new Random().nextInt());
-            post.setTimeOfCreation(new Date());
+            post.setNumberOfLikes(0);
+            post.setTimeOfCreation(new Date().getTime());
             //post.setFamilyId(new Random().toString());
             Observable<ResourceResponse<Document>> resp = client.createDocument(UsersCollection, post, null, false);
             String str =  resp.toBlocking().first().getResource().getId();
-            post.setId(str + "0000");
+            post.setId(str);
 
             FeedOptions queryOptions = new FeedOptions();
             queryOptions.setEnableCrossPartitionQuery(true);
@@ -101,9 +99,7 @@ public class PostController {
                 for( Document d : it.next().getResults()) {
                     System.out.println( d.toJson());
                     addedPost = d.toJson();
-                    Gson g = new Gson();
-                    User u = g.fromJson(d.toJson(), User.class);
-                    System.out.println( u.getId());
+                    System.out.println( d.getId());
                 }
         } catch( Exception e) {
             e.printStackTrace();
@@ -113,6 +109,62 @@ public class PostController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .body(addedPost);
+    }
+
+    @PutMapping("/like")
+    public ResponseEntity<String> addLike(@RequestParam String id){
+        String addedPost = "";
+        String updatedPost = "";
+        try {
+            AsyncDocumentClient post = getDocumentClient();
+            String UsersCollection = getCollectionString("Post");
+
+            FeedOptions queryOptions = new FeedOptions();
+            queryOptions.setEnableCrossPartitionQuery(true);
+            queryOptions.setMaxDegreeOfParallelism(-1);
+
+            post.queryDocuments(
+                    UsersCollection, "SELECT * FROM Post",
+                    queryOptions).toBlocking().getIterator();
+            Iterator<FeedResponse<Document>> it;
+
+            it = post.queryDocuments(
+                    UsersCollection, "SELECT * FROM Post u WHERE u.id = '" + id + "'",
+                    queryOptions).toBlocking().getIterator();
+
+            System.out.println( "Result:");
+            while( it.hasNext())
+                for( Document d : it.next().getResults()) {
+                    System.out.println( d.toJson());
+                    Gson g = new Gson();
+                    Post u = g.fromJson(d.toJson(), Post.class);
+                    u.setNumberOfLikes(u.getNumberOfLikes()+1);
+                    updatedPost = g.toJson(u,Post.class);
+
+                    Document upsertingDocument = new Document(
+                            String.format("{ 'id': '%s', 'title' : '%s', 'communityId' : '%s', 'creatorNickname' : '%s'," +
+                                    " 'timeOfCreation'  : '%s', 'message' : '%s', 'linkToImage' : '%s', 'linkToParentPost' : '%s'," +
+                                    " 'numberOfLikes' : '%s'}", d.getId(), u.getTitle(), u.getCommunityId(), u.getCreatorNickname(),
+                                    u.getTimeOfCreation(), u.getMessage(), u.getLinkToImage(), u.getLinkToParentPost(), u.getNumberOfLikes()));
+                    Observable<ResourceResponse<Document>> upsertDocumentObservable = post
+                            .upsertDocument(getCollectionString("Post"), upsertingDocument, null, false);
+
+                    List<ResourceResponse<Document>> capturedResponse = Collections
+                            .synchronizedList(new ArrayList<>());
+
+                    upsertDocumentObservable.subscribe(resourceResponse -> {
+                        capturedResponse.add(resourceResponse);
+                    });
+                }
+        } catch( Exception e) {
+            e.printStackTrace();
+        }
+
+        String contentType = "application/json";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(updatedPost);
     }
 
 }

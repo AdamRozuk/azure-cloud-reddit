@@ -15,7 +15,7 @@ public class Post {
     String title;
     String communityId;
     String creatorNickname;
-    Date timeOfCreation;
+    Long timeOfCreation;
     String message;
     String linkToImage;
     String linkToParentPost;

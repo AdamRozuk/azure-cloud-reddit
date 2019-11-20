@@ -36,6 +36,8 @@ public class CommunityController {
             String str =  resp.toBlocking().first().getResource().getId();
             community.setId(str);
 
+            //client.upsertDocument() it's the way how you make update in cosmos db
+
             FeedOptions queryOptions = new FeedOptions();
             queryOptions.setEnableCrossPartitionQuery(true);
             queryOptions.setMaxDegreeOfParallelism(-1);
