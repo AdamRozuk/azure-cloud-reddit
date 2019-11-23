@@ -10,15 +10,20 @@ import com.microsoft.azure.cosmosdb.FeedResponse;
 import com.microsoft.azure.cosmosdb.ResourceResponse;
 import com.microsoft.azure.cosmosdb.rx.AsyncDocumentClient;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rx.Observable;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getCollectionString;
 import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getDocumentClient;
+
 
 @RestController
 @RequestMapping("/post")
@@ -30,6 +35,7 @@ public class PostController {
                                           @RequestParam("linkToImage") String linkToImage,
                                           @RequestParam("linkToParentPost") String linkToParentPost){
         String addedPost = "";
+
         Post post = new Post();
         try {
             AsyncDocumentClient client = getDocumentClient();
@@ -65,6 +71,7 @@ public class PostController {
                 .body(addedPost);
     }
 
+    @Cacheable(value="post", key="#id")
     @GetMapping("/findById")
     public ResponseEntity<String> findUserById(@RequestParam("id") String id){
         String addedPost = "";

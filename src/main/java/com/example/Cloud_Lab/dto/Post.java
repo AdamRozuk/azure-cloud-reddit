@@ -3,13 +3,19 @@ package com.example.Cloud_Lab.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.cache.annotation.Cacheable;
 
+import java.io.Serializable;
 import java.util.Date;
 
+@Cacheable(value="post")
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Post {
+public class Post implements Serializable {
+
+    private static final long serialVersionUID = 7156526077883281723L;
+
     String Id;
     String familyId;
     String title;

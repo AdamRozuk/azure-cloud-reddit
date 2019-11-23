@@ -6,6 +6,9 @@ import com.microsoft.azure.cosmosdb.Document;
 import com.microsoft.azure.cosmosdb.FeedOptions;
 import com.microsoft.azure.cosmosdb.FeedResponse;
 import com.microsoft.azure.cosmosdb.rx.AsyncDocumentClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,53 +26,66 @@ import static com.example.Cloud_Lab.controller.CreateDatabaseAndCollections.getD
 @RequestMapping("/page")
 public class PageController {
 
+    @Autowired
+    private StringRedisTemplate template;
+
     @GetMapping("/initialPage")
-    public ResponseEntity<String> initialPage(){
-        String addedCommunity = "";
+    public ResponseEntity<String> initialPage() {
         StringBuilder builder = new StringBuilder();
-        //List<String> communities= new ArrayList<>();
-        try {
-            AsyncDocumentClient client = getDocumentClient();
-            String UsersCollection = getCollectionString("Post");
+        ValueOperations<String, String> ops = this.template.opsForValue();
+        String key = "initialpage";
+        if(!this.template.hasKey(key)) {
 
-            FeedOptions queryOptions = new FeedOptions();
-            queryOptions.setEnableCrossPartitionQuery(true);
-            queryOptions.setMaxDegreeOfParallelism(-1);
+            String addedCommunity = "";
+            //builder = new StringBuilder();
+            //List<String> communities= new ArrayList<>();
+            try {
+                AsyncDocumentClient client = getDocumentClient();
+                String UsersCollection = getCollectionString("Post");
 
-            Iterator<FeedResponse<Document>> it = client.queryDocuments(
-                    UsersCollection, "SELECT TOP 2 * FROM Post ORDER BY Post.numberOfLikes desc",
-                    queryOptions).toBlocking().getIterator();
+                FeedOptions queryOptions = new FeedOptions();
+                queryOptions.setEnableCrossPartitionQuery(true);
+                queryOptions.setMaxDegreeOfParallelism(-1);
 
-            System.out.println( "Result:");
-            builder.append("{ \"posts\": [");
-            StringJoiner mystring = new StringJoiner(",");
-            while( it.hasNext()){
-                for( Document d : it.next().getResults()){
-                    mystring.add(d.toJson());
+                Iterator<FeedResponse<Document>> it = client.queryDocuments(
+                        UsersCollection, "SELECT TOP 5 * FROM Post ORDER BY Post.numberOfLikes desc",
+                        queryOptions).toBlocking().getIterator();
+
+                System.out.println("Result:");
+                builder.append("{ \"posts\": [");
+                StringJoiner mystring = new StringJoiner(",");
+                while (it.hasNext()) {
+                    for (Document d : it.next().getResults()) {
+                        mystring.add(d.toJson());
+                    }
                 }
+
+                builder.append(mystring);
+                builder.append("]}");
+
+                System.out.println("Result:");
+                while (it.hasNext())
+                    for (Document d : it.next().getResults()) {
+                        System.out.println(d.toJson());
+                        //communities.add(d.toJson());
+                        addedCommunity = d.toJson();
+                        Gson g = new Gson();
+                        User u = g.fromJson(d.toJson(), User.class);
+                        System.out.println(u.getId());
+                    }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
-            builder.append(mystring);
-            builder.append("]}");
+            ops.set(key,builder.toString());
 
-            System.out.println( "Result:");
-            while( it.hasNext())
-                for( Document d : it.next().getResults()) {
-                    System.out.println( d.toJson());
-                    //communities.add(d.toJson());
-                    addedCommunity = d.toJson();
-                    Gson g = new Gson();
-                    User u = g.fromJson(d.toJson(), User.class);
-                    System.out.println( u.getId());
-                }
-        } catch( Exception e) {
-            e.printStackTrace();
         }
-        String contentType = "application/json";
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .body(builder.toString());
+            String contentType = "application/json";
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(ops.get(key));
     }
 
     @GetMapping("/thread")
